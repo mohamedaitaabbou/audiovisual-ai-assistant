@@ -1,16 +1,20 @@
+
 import os
 
 from dotenv import load_dotenv
 from groq import Groq
 
-from knowledge.audiovisual_knowledge import audiovisual_knowledge
+from knowledge.audiovisual_knowledge import (
+    audiovisual_knowledge,
+    question_keywords
+)
 
 load_dotenv(override=True)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-def get_ai_response(user_question, chat_history):
+def get_ai_response(user_question, chat_history, language="English"):
 
     recent_history = chat_history[-10:]
 
@@ -24,14 +28,14 @@ def get_ai_response(user_question, chat_history):
 
     knowledge_context = ""
 
-    for topic, information in audiovisual_knowledge.items():
-        if topic.lower() in search_text:
-            knowledge_context += f"\n{topic}: {information}\n"
+    for topic, keywords in question_keywords.items():
+
+        if any(keyword.lower() in search_text for keyword in keywords):
+
+            knowledge_context += f"\n{topic}: {audiovisual_knowledge[topic]}\n"
 
     if not knowledge_context:
-        knowledge_context = (
-            "No specific information found in the knowledge base."
-        )
+        knowledge_context = "No specific information found in the knowledge base."
 
     messages = [
         {
@@ -39,9 +43,12 @@ def get_ai_response(user_question, chat_history):
             "content": (
                 "You are a professional audiovisual and broadcast assistant. "
                 "Use the knowledge context as your technical reference. "
-                "Understand the conversation history and follow-up questions. "
+                "Understand conversation history and follow-up questions. "
                 "Do not invent technical facts. "
-                "If the context does not contain the answer, say so."
+                "If the context does not contain the answer, say so. "
+                f"Always respond in {language}. "
+                "Keep technical terms such as CCU, RCP, SDI and HDMI "
+                "in their original form when appropriate."
             )
         },
         {

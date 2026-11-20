@@ -26,3 +26,4 @@ def get_ai_response(user_question):
     )
 
     return response["message"]["content"]
+
