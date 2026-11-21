@@ -149,6 +149,26 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
 
+# File Upload
+st.divider()
+
+st.subheader("📎 Attach Files")
+
+uploaded_files = st.file_uploader(
+    "Upload PDF manuals or images",
+    type=["pdf", "png", "jpg", "jpeg"],
+    accept_multiple_files=True,
+    key="uploaded_files"
+)
+
+if uploaded_files:
+
+    st.success(f"{len(uploaded_files)} file(s) selected:")
+
+    for uploaded_file in uploaded_files:
+        st.write(f"📄 {uploaded_file.name}")
+
+
 # User input
 user_question = st.chat_input(
     "Ask an audiovisual question..."
