@@ -1,13 +1,11 @@
-
 from io import BytesIO
 
 from pypdf import PdfReader
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def extract_pdf_pages(uploaded_file):
-    """
-    Extract text from a PDF while preserving page numbers.
-    """
+    """Extract text from a PDF while preserving page numbers."""
     try:
         pdf_bytes = BytesIO(uploaded_file.getvalue())
         reader = PdfReader(pdf_bytes)
@@ -33,10 +31,7 @@ def extract_pdf_pages(uploaded_file):
 
 
 def split_into_chunks(pages, chunk_size=1000, overlap=150):
-    """
-    Split PDF pages into smaller text chunks.
-    Preserve filename and page number.
-    """
+    """Split PDF pages into smaller text chunks."""
     chunks = []
 
     for page in pages:
@@ -62,9 +57,7 @@ def split_into_chunks(pages, chunk_size=1000, overlap=150):
 
 
 def search_chunks(question, chunks, top_k=4):
-    """
-    Find chunks containing the most relevant question keywords.
-    """
+    """Find chunks containing the most relevant question keywords."""
     question_words = set(question.lower().split())
     results = []
 
@@ -89,3 +82,54 @@ def search_chunks(question, chunks, top_k=4):
     ]
 
 
+def semantic_search_chunks(
+    question,
+    chunks,
+    model,
+    top_k=4,
+    threshold=0.40
+):
+    """
+    Return only chunks whose cosine similarity meets the threshold.
+    Similarity scores are not percentages.
+    """
+
+    if not chunks:
+        return []
+
+    texts = [chunk["text"] for chunk in chunks]
+
+    question_embedding = model.encode(
+        [question],
+        normalize_embeddings=True
+    )
+
+    chunk_embeddings = model.encode(
+        texts,
+        normalize_embeddings=True
+    )
+
+    similarities = cosine_similarity(
+        question_embedding,
+        chunk_embeddings
+    )[0]
+
+    ranked_indices = similarities.argsort()[::-1]
+
+    results = []
+
+    for index in ranked_indices:
+        score = float(similarities[index])
+
+        if score < threshold:
+            continue
+
+        results.append({
+            **chunks[index],
+            "similarity": score
+        })
+
+        if len(results) >= top_k:
+            break
+
+    return results
